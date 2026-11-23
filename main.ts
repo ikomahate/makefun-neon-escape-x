@@ -1,26 +1,83 @@
-// A working entry for a make.fun video-on-X bounty (Node 22, standard library only): it copies POST.json from the
-// repository root to /output/POST.json, where the gate reads it. That is all the program has to do. The entry is the
-// post itself: your agent makes a short video on the subject this bounty's rules name, ending with make.fun's referral
-// end card (https://make.fun/press/manifest.json) and your referral code, the video is posted natively on X
-// from a public account with make.fun or @makefunai and your play code in the post's text, POST.json names the post,
-// and the house reads the post's views and interactions from X. Nothing this program writes about the post is scored.
-//
-// The POST.json this starter ships holds a placeholder address, so the gate refuses it as it stands (valid 0).
-// Replace it with your post's address before you submit.
-//
-// Outside the grader's container, MAKEFUN_BOT_DIR and MAKEFUN_OUTPUT_DIR stand in for /bot and /output:
-//   mkdir -p out && MAKEFUN_BOT_DIR=. MAKEFUN_OUTPUT_DIR=out node main.ts
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
-import { copyFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+const MAX_POST_BYTES = 16_384;
+// Match the address forms listed in RULES.txt without rewriting the submitted URL.
+const POST_ADDRESS = /^https:\/\/(?:(?:www|mobile)\.)?(?:x|twitter)\.com\/(?:[a-z0-9_]+\/status|i\/web\/status)\/[0-9]+(?:[?#][^\s]*)?$/i;
 
-const BOT_DIR = process.env.MAKEFUN_BOT_DIR ?? '/bot';
-const OUTPUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+function detail(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
-mkdirSync(OUTPUT_DIR, { recursive: true });
+function directory(name: string, fallback: string): string {
+  const value = process.env[name] ?? fallback;
+  if (value.trim().length === 0) {
+    throw new Error(`${name} must name a directory; it cannot be empty.`);
+  }
+  return resolve(value);
+}
+
+function readPost(filename: string): Buffer {
+  let bytes: Buffer;
+  try {
+    bytes = readFileSync(filename);
+  } catch (error) {
+    throw new Error(`Cannot read input ${JSON.stringify(filename)}: ${detail(error)}`);
+  }
+
+  if (bytes.length > MAX_POST_BYTES) {
+    throw new Error(`Input POST.json is ${bytes.length} bytes; the limit is ${MAX_POST_BYTES}.`);
+  }
+
+  // Buffer.toString replaces malformed byte sequences, which could validate data
+  // different from the bytes we publish. Reject encoding errors before parsing.
+  let text: string;
+  try {
+    text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+  } catch {
+    throw new Error('Input POST.json must be valid UTF-8; malformed byte sequences are not allowed.');
+  }
+
+  let post: unknown;
+  try {
+    post = JSON.parse(text);
+  } catch (error) {
+    throw new Error(`Input POST.json must contain valid JSON: ${detail(error)}`);
+  }
+
+  if (post === null || typeof post !== 'object' || Array.isArray(post)) {
+    throw new Error('Input POST.json must be a JSON object.');
+  }
+  if (!('url' in post) || typeof post.url !== 'string') {
+    throw new Error('Input POST.json must have a string "url" field.');
+  }
+  if (!POST_ADDRESS.test(post.url)) {
+    throw new Error(
+      'Input POST.json "url" must be an HTTPS X/Twitter post address with a numeric status ID ' +
+      '(for example https://x.com/handle/status/123); www., mobile. and /i/web/status/ are supported.',
+    );
+  }
+
+  // Retain formatting, extra fields, query strings and the exact published address.
+  return bytes;
+}
+
+function run(): void {
+  const source = join(directory('MAKEFUN_BOT_DIR', '/bot'), 'POST.json');
+  const outputDirectory = directory('MAKEFUN_OUTPUT_DIR', '/output');
+  const bytes = readPost(source);
+
+  try {
+    mkdirSync(outputDirectory, { recursive: true });
+    writeFileSync(join(outputDirectory, 'POST.json'), bytes);
+  } catch (error) {
+    throw new Error(`Cannot write output in ${JSON.stringify(outputDirectory)}: ${detail(error)}`);
+  }
+}
+
 try {
-  copyFileSync(join(BOT_DIR, 'POST.json'), join(OUTPUT_DIR, 'POST.json'));
-} catch (err) {
-  console.error(`POST.json could not be copied from ${BOT_DIR}: ${(err as Error).message}`);
-  process.exit(1);
+  run();
+} catch (error) {
+  console.error(`makefun: ${detail(error)}`);
+  process.exitCode = 1;
 }
