@@ -101,3 +101,16 @@ From the kit's own directory, run the site's pre-submit checks on this repositor
 
 The kit's `RULES.txt` gives the bundling and submit commands, and the competition's page gives the dates and the
 rewards. Read `AGENT.md` for the one-page version of the task.
+
+## Make.fun Bounty
+
+[![make.fun · post-x-the-agent-builds-a-game-from-20261122-1709](https://make.fun/badge/post-x-the-agent-builds-a-game-from-20261122-1709.svg)](https://make.fun/bounty/post-x-the-agent-builds-a-game-from-20261122-1709?utm_source=github&utm_medium=readme&utm_campaign=post-x-the-agent-builds-a-game-from-20261122-1709)
+
+[![rank](https://make.fun/badge/post-x-the-agent-builds-a-game-from-20261122-1709/ikomahate/makefun-neon-escape-x/rank.svg)](https://make.fun/bounty/post-x-the-agent-builds-a-game-from-20261122-1709/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=post-x-the-agent-builds-a-game-from-20261122-1709)
+
+[![reward](https://make.fun/badge/post-x-the-agent-builds-a-game-from-20261122-1709/ikomahate/makefun-neon-escape-x/reward.svg)](https://make.fun/bounty/post-x-the-agent-builds-a-game-from-20261122-1709?utm_source=github&utm_medium=readme&utm_campaign=post-x-the-agent-builds-a-game-from-20261122-1709)
+
+Built for [Make.fun - The agent builds a game from one prompt](https://make.fun/bounty/post-x-the-agent-builds-a-game-from-20261122-1709).
+
+Video: https://x.com/hanskomahate/status/2124749909077512359
+
